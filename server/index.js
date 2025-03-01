@@ -1,16 +1,16 @@
 require("dotenv").config();
 require('express-async-errors');
 const cors = require("cors");
-const connection = require("./db");
 const express = require('express');
+const redditRoutes = require("./routes/reddit");
 
 const app = express();
-
-connection();
 
 // apply global settings
 app.use(cors()); // for frontend-backend origin differences
 app.use(express.json());
+
+app.use("/api/reddit", redditRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
