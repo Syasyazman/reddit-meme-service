@@ -2,9 +2,12 @@ require("dotenv").config();
 require('express-async-errors');
 const cors = require("cors");
 const express = require('express');
+const teleBot = require("./bot");
 const redditRoutes = require("./routes/reddit");
 
 const app = express();
+
+teleBot();
 
 // apply global settings
 app.use(cors()); // for frontend-backend origin differences
