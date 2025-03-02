@@ -1,5 +1,7 @@
+const fs = require("fs");
+
 // takes in processed data (JSON object) and reformats into array
-const generateCsv = (postsArr) => {
+const generateCsv = (posts) => {
     csvRows = [];
     const headers = [
         "author_id",
@@ -15,17 +17,19 @@ const generateCsv = (postsArr) => {
 
     csvRows.push(headers.join(','));
     
-    for (const post of postsArr) {
-        const values = Object.values(post).join(',');
+    for (const post of posts) {
+        const values = Object.values(post).map(value => `"${value}"`).join(',');
         csvRows.push(values);
     }
 
-    csvRows.join('\n');
+    const csvString = csvRows.join('\n');
+    const filePath = "./temp/redditPosts.csv";
+    fs.writeFileSync(filePath, csvString, "utf-8", (err) => {
+        if (err) console.error("Failed to write csv file");
+        else console.log("Csv file successfully written");
+    });
 
-    const blob = new Blob([csvRows], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-
-    return url;
+    return filePath;
 }
 
 module.exports = generateCsv;

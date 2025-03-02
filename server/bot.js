@@ -1,4 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
+const generateCsv = require('./utils/csvMaker');
 const generatePdf = require('./utils/pdfMaker');
 const { extractImageType } = require('./utils/dataParser');
 
@@ -33,9 +34,20 @@ const teleBot = () => {
             
             const pdfBuffer = await generatePdf(data.redditPosts);
             bot.sendDocument(chatId, pdfBuffer, {
+                caption: 'Reddit Top 20 Memes Now',
                 filename: 'redditmeme_report.pdf'
             });
             bot.sendMessage(chatId, 'Here is your report of Reddit\'s top 20 most upvoted memes in the past 24 hours, sorted in DESC order. Enjoy!');
+        } else if (messageText === '/topmemescsv') {
+            const response = await fetch('http://localhost:8080/api/reddit/top-memes');
+            const data = await response.json();
+            
+            //console.log("postss", data.redditPosts);
+            const filePath = generateCsv(data.redditPosts);
+            //console.log(csvBuffer instanceof Buffer);
+            bot.sendDocument(chatId, filePath, {
+                filename: 'redditmeme_report.csv'
+            });
         } else {
             bot.sendMessage(chatId, "I don't quite get what you're saying... \nType /topmemes so i can crawl Reddit for you!");
         }
