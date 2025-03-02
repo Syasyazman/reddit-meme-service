@@ -23,7 +23,7 @@ const generateCsv = (posts) => {
     }
 
     const csvString = csvRows.join('\n');
-    const filePath = "./temp/redditPosts.csv";
+    const filePath = "./temp/redditTopMemesReport.csv";
     fs.writeFileSync(filePath, csvString, "utf-8", (err) => {
         if (err) console.error("Failed to write csv file");
         else console.log("Csv file successfully written");

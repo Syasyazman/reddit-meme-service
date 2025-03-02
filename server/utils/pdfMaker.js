@@ -105,6 +105,7 @@ const generatePdf = async (posts) => {
         count++;
     }
 
+    pdfDoc.setTitle('Reddit Top 20 Memes Report');
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
 }
