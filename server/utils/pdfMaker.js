@@ -1,4 +1,5 @@
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const { extractImageType } = require("./dataParser");
 
 const getImageBuffer = async (imageUrl) => {
     const response = await fetch(imageUrl)
@@ -12,68 +13,95 @@ const generatePdf = async (posts) => {
     let page = pdfDoc.addPage([600, 800]);
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 14;
+    const lineHeight = fontSize * 2;
 
-    let currHeight = 750; 
+    page.drawText('R/Memes Top 20 Voted Posts in Past 24 Hours', {
+        x: 50,
+        y: 750,
+        size: 20,
+        font: helveticaFont,
+        color: rgb(0, 0, 0)
+    });
+
+    let currHeight = 720; 
     let count = 1;
     
     for (const post of posts) {
-        // add new page if reached the end
-        if (currHeight < 150) {
+        // remove emoji unicode from title (if any)
+        const filteredTitle = post.title.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+        const titleWidth = helveticaFont.widthOfTextAtSize(filteredTitle, fontSize);
+        const numTitleLines = Math.ceil(titleWidth / 450);
+
+        const imageType = extractImageType(post.url);
+        const imageBytes = await getImageBuffer(post.url);
+        let hasImage = true;
+        let image;
+        let imageDims;
+
+        if (imageType == "png") {
+            image = await pdfDoc.embedPng(imageBytes);
+        } else if (imageType == "jpg") {
+            image = await pdfDoc.embedJpg(imageBytes);
+        } else {
+            hasImage = false;
+        }
+
+        if (hasImage) {
+            const scaleFactor = Math.min(1, (0.4 * page.getWidth()) / image.width);
+            imageDims = image.scale(scaleFactor);
+        }
+
+        // add new page if whole post cannot fit the current page
+        const postHeight = (numTitleLines * lineHeight) + lineHeight + (imageDims ? imageDims.height : 0);
+        if (currHeight < postHeight) {
             page = pdfDoc.addPage([600, 800]);
             currHeight = 750;
         }
 
-        // remove emoji unicode from title (if any)
-        const filteredTitle = post.title.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
         page.drawText(`${count}. ${filteredTitle}  (Upvotes: ${post.upvotes}) \n`, {
             x: 50,
             y: currHeight,
-            maxWidth: 550,
+            maxWidth: 500,
             size: fontSize,
             font: helveticaFont,
             color: rgb(0, 0, 0)
         });
+
+        currHeight -= (numTitleLines * lineHeight);
 
         page.drawText(`Author: ${post.author_name} | Comments: ${post.num_comments} | Upvote Ratio: ${post.upvote_ratio}`, {
             x: 50,
-            y: currHeight - 20,
-            maxWdith: 550,
+            y: currHeight,
+            maxWdith: 500,
             size: fontSize,
             font: helveticaFont,
             color: rgb(0, 0, 0)
         });
 
-        const index = post.url.indexOf('?');
-        const urlSubstr = post.url.substring(index - 4, index);
-        const imageBytes = await getImageBuffer(post.url);
+        currHeight -= lineHeight;
 
-        if (urlSubstr == ".png") {
-            const pngImage = await pdfDoc.embedPng(imageBytes);
-            const pngDims = pngImage.scale(0.4)
-
-            page.drawImage(pngImage, {
+        if (hasImage) {
+            page.drawImage(image, {
                 x: 50,
-                y: currHeight - 40 - pngDims.height,
-                width: pngDims.width,
-                height: pngDims.height,
-            })
+                y: currHeight - imageDims.height,
+                width: imageDims.width,
+                height: imageDims.height,
+            });
             
-            currHeight -= (pngDims.height + 20);
-        } else if (urlSubstr == "jpeg") {
-            const jpgImage = await pdfDoc.embedJpg(imageBytes);
-            const jpgDims = jpgImage.scale(0.2)
-
-            page.drawImage(jpgImage, {
+            currHeight -= (imageDims.height + (2 * lineHeight));
+        } else {
+            page.drawText(`(Meme\'s ${imageType} format cannot be shown in this report)`, {
                 x: 50,
-                y: currHeight - 40 - jpgDims.height,
-                width: jpgDims.width,
-                height: jpgDims.height,
-            })
+                y: currHeight,
+                maxWidth: 500,
+                size: fontSize,
+                font: helveticaFont,
+                color: rgb(0, 0, 0)
+            });
 
-            currHeight -= (jpgDims.height + 20);
+            currHeight -= 2 * lineHeight;
         }
 
-        currHeight -= 40;
         count++;
     }
 

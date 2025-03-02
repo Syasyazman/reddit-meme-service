@@ -28,4 +28,19 @@ const extractMemeData = (rawData) => {
     
 }
 
-module.exports = extractMemeData;
+const extractImageType = (imageUrl) => {
+    const index = imageUrl.indexOf('?');
+    const urlSubstr = imageUrl.substring(index - 4, index);
+
+    if (urlSubstr == ".png") {
+        return "png";
+    } else if (urlSubstr == "jpeg" || urlSubstr == ".jpg") {
+        return "jpg";
+    } else if (urlSubstr == ".gif") {
+        return "gif";
+    } else {
+        return "";
+    }
+}
+
+module.exports = { extractMemeData, extractImageType };
