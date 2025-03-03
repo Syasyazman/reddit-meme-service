@@ -1,4 +1,4 @@
-const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
+const { PDFDocument, StandardFonts, rgb, asPDFName } = require('pdf-lib');
 const { extractImageType } = require("./dataParser");
 
 const getImageBuffer = async (imageUrl) => {
@@ -28,7 +28,8 @@ const generatePdf = async (posts) => {
     
     for (const post of posts) {
         // remove emoji unicode from title (if any)
-        const filteredTitle = post.title.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+        const filteredTitle = post.title.replace(/[\p{Extended_Pictographic}]/gu, '');
+        console.log("filtered title", filteredTitle);
         const titleWidth = helveticaFont.widthOfTextAtSize(filteredTitle, fontSize);
         const numTitleLines = Math.ceil(titleWidth / 450);
 

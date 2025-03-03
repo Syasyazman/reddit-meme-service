@@ -30,13 +30,20 @@ const extractMemeData = (rawData) => {
 
 const extractImageType = (imageUrl) => {
     const index = imageUrl.indexOf('?');
-    const urlSubstr = imageUrl.substring(index - 4, index);
+    const rightSubstr = imageUrl.substring(index + 1, index + 7);
+    let urlSubstr;
 
-    if (urlSubstr == ".png") {
+    if (rightSubstr == "format") {
+        urlSubstr = imageUrl.substring(index + 8, index + 13);
+    } else {
+        urlSubstr = imageUrl.substring(index - 4, index);
+    }
+
+    if (urlSubstr.includes("png")) {
         return "png";
-    } else if (urlSubstr == "jpeg" || urlSubstr == ".jpg") {
+    } else if (urlSubstr.includes("jpeg") || urlSubstr.includes("jpg") || urlSubstr.includes("pjpg")) {
         return "jpg";
-    } else if (urlSubstr == ".gif") {
+    } else if (urlSubstr.includes("gif")) {
         return "gif";
     } else {
         return "";
