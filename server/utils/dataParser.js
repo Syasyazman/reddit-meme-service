@@ -1,4 +1,5 @@
-// extracts relevant data needed for database entry and report generation
+// This file contains functions for data manipulation of reddit crawl results
+
 const extractMemeData = (rawData) => {
     try {
         const postsArr = rawData.data.children;
@@ -25,15 +26,15 @@ const extractMemeData = (rawData) => {
     } catch (err) {
         console.error("Unable to extract data", err);
     }
-    
 }
 
+// Parses Reddit image URLs as they can have different formats for the same image type
 const extractImageType = (imageUrl) => {
     const index = imageUrl.indexOf('?');
-    const rightSubstr = imageUrl.substring(index + 1, index + 7);
+    const rightOfIndexSubstr = imageUrl.substring(index + 1, index + 7);
     let urlSubstr;
 
-    if (rightSubstr == "format") {
+    if (rightOfIndexSubstr == "format") {
         urlSubstr = imageUrl.substring(index + 8, index + 13);
     } else {
         urlSubstr = imageUrl.substring(index - 4, index);

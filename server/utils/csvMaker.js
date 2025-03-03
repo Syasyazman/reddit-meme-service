@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-// takes in processed data (JSON object) and reformats into array
+// Post results in JSON has to be reformatted and written into file before being sent to telebot
 const generateCsv = (posts) => {
     csvRows = [];
     const headers = [
@@ -18,15 +18,18 @@ const generateCsv = (posts) => {
     csvRows.push(headers.join(','));
     
     for (const post of posts) {
-        const values = Object.values(post).map(value => `"${value}"`).join(',');
+        const values = Object.values(post)
+                             .map(value => `"${value}"`)
+                             .join(',');
         csvRows.push(values);
     }
 
     const csvString = csvRows.join('\n');
+    
     const filePath = "./temp/redditTopMemesReport.csv";
     fs.writeFileSync(filePath, csvString, "utf-8", (err) => {
-        if (err) console.error("Failed to write csv file");
-        else console.log("Csv file successfully written");
+        if (err) console.error("Failed to write CSV file", err);
+        else console.log("CSV file successfully written");
     });
 
     return filePath;

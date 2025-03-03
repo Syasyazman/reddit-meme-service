@@ -1,4 +1,4 @@
-const { PDFDocument, StandardFonts, rgb, asPDFName } = require('pdf-lib');
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const { extractImageType } = require("./dataParser");
 
 const getImageBuffer = async (imageUrl) => {
@@ -8,49 +8,57 @@ const getImageBuffer = async (imageUrl) => {
     return imageBuffer;
 }
 
-const generatePdf = async (posts) => {
+const embedImageIntoPDF = async (imageType, imageBytes, pdfDoc, pageWidth) => {
+    let image, imageDims;
+    let hasImage = true;
+
+    if (imageType == "png") {
+        image = await pdfDoc.embedPng(imageBytes);
+    } else if (imageType == "jpg") {
+        image = await pdfDoc.embedJpg(imageBytes);
+    } else {
+        image = null;
+        imageDims = null;
+        hasImage = false;
+    }
+
+    if (hasImage) {
+        const scaleFactor = Math.min(1, (0.4 * pageWidth) / image.width);
+        imageDims = image.scale(scaleFactor);
+    }
+
+    return { image: image, imageDims: imageDims };
+}
+
+const generatePdf = async (postsArr) => {
     const pdfDoc = await PDFDocument.create();
+    pdfDoc.setTitle('Reddit Top 20 Memes Report');
     let page = pdfDoc.addPage([600, 800]);
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontSize = 14;
     const lineHeight = fontSize * 2;
 
+    // Write header of report
     page.drawText('R/Memes Top 20 Voted Posts in Past 24 Hours', {
         x: 50,
         y: 750,
         size: 20,
-        font: helveticaFont,
+        font: font,
         color: rgb(0, 0, 0)
     });
 
-    let currHeight = 720; 
-    let count = 1;
+    let currHeight = 720; // tracks y param of drawText() - measured from botton of page
+    let postCount = 1;
     
-    for (const post of posts) {
+    for (const post of postsArr) {
         // remove emoji unicode from title (if any)
         const filteredTitle = post.title.replace(/[\p{Extended_Pictographic}]/gu, '');
-        console.log("filtered title", filteredTitle);
-        const titleWidth = helveticaFont.widthOfTextAtSize(filteredTitle, fontSize);
-        const numTitleLines = Math.ceil(titleWidth / 450);
+        const titleWidth = font.widthOfTextAtSize(filteredTitle + ` (Upvotes: ${post.upvotes})`, fontSize);
+        const numTitleLines = Math.ceil(titleWidth / 450); // determines text wrap
 
         const imageType = extractImageType(post.url);
         const imageBytes = await getImageBuffer(post.url);
-        let hasImage = true;
-        let image;
-        let imageDims;
-
-        if (imageType == "png") {
-            image = await pdfDoc.embedPng(imageBytes);
-        } else if (imageType == "jpg") {
-            image = await pdfDoc.embedJpg(imageBytes);
-        } else {
-            hasImage = false;
-        }
-
-        if (hasImage) {
-            const scaleFactor = Math.min(1, (0.4 * page.getWidth()) / image.width);
-            imageDims = image.scale(scaleFactor);
-        }
+        const { image, imageDims } = await embedImageIntoPDF(imageType, imageBytes, pdfDoc, page.getWidth());
 
         // add new page if whole post cannot fit the current page
         const postHeight = (numTitleLines * lineHeight) + lineHeight + (imageDims ? imageDims.height : 0);
@@ -59,12 +67,12 @@ const generatePdf = async (posts) => {
             currHeight = 750;
         }
 
-        page.drawText(`${count}. ${filteredTitle}  (Upvotes: ${post.upvotes}) \n`, {
+        page.drawText(`${postCount}. ${filteredTitle}  (Upvotes: ${post.upvotes}) \n`, {
             x: 50,
             y: currHeight,
             maxWidth: 500,
             size: fontSize,
-            font: helveticaFont,
+            font: font,
             color: rgb(0, 0, 0)
         });
 
@@ -75,13 +83,13 @@ const generatePdf = async (posts) => {
             y: currHeight,
             maxWdith: 500,
             size: fontSize,
-            font: helveticaFont,
+            font: font,
             color: rgb(0, 0, 0)
         });
 
         currHeight -= lineHeight;
 
-        if (hasImage) {
+        if (image != null) {
             page.drawImage(image, {
                 x: 50,
                 y: currHeight - imageDims.height,
@@ -96,17 +104,16 @@ const generatePdf = async (posts) => {
                 y: currHeight,
                 maxWidth: 500,
                 size: fontSize,
-                font: helveticaFont,
+                font: font,
                 color: rgb(0, 0, 0)
             });
 
             currHeight -= 2 * lineHeight;
         }
 
-        count++;
+        postCount++;
     }
 
-    pdfDoc.setTitle('Reddit Top 20 Memes Report');
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
 }

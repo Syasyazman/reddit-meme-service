@@ -1,11 +1,7 @@
-
-const addMemesToDb = require("../db");
 const { extractMemeData } = require("../utils/dataParser");
-const generateCsv = require("../utils/csvMaker");
 
 const crawlRedditTopMemes = async () => {
     try {
-        // fetch json data from reddit
         const redditData = await fetch("https://www.reddit.com/r/memes/top.json?raw_json=1&t=day&limit=20", {
             method: "GET",
             headers: {
@@ -24,9 +20,9 @@ const crawlRedditTopMemes = async () => {
     }
 };
 
+// Extra feature - for user to get a free meme when starting convo with telebot
 const crawlRedditRisingMemes = async () => {
     try {
-        // fetch json data from reddit
         const redditData = await fetch("https://www.reddit.com/r/memes/rising.json?raw_json=1&t=day&limit=3", {
             method: "GET",
             headers: {
