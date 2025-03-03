@@ -1,6 +1,8 @@
 <_Do note that this is in local environment_>
 
-Tech stack used:
+For this web service, a telegram chatbot is used as the client-facing interface (i.e frontend).
+
+Backend Tech stack used:
 - Node.js
 - Express.js
 - PostgreSQL
